@@ -8,6 +8,8 @@ No cookies, no tracking.
 
 # How to use it?
 
+Download index.html. Open in browser.
+
 ## Creating Objects
 
 1. Double click creates a **note**. Type text. Click outside of the note. You can change that text later. Finalize the note by hitting enter (you can still edit it later by doubleclicking). Shift + Enter is newline.
