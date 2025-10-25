@@ -470,6 +470,19 @@ line.thread.live { stroke-dasharray: 5 4; }
           note.textContent = n.text;
           positionEl(note, n.x, n.y, true);
           world.appendChild(note);
+
+          // Attach the same keydown handler as new notes
+          note.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' && ev.ctrlKey) {
+              ev.preventDefault();
+              document.execCommand('insertHTML', false, '<br><br>');
+              return;
+            }
+            if (ev.key === 'Enter' && !ev.ctrlKey) {
+              ev.preventDefault();
+              note.removeAttribute('contenteditable');
+            }
+          });
         }
 
         // Recreate images (Base64 included)
