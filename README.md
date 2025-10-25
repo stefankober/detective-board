@@ -41,7 +41,7 @@ See screenshot below or test page: https://stefankober.github.io/detective-board
 
 For me it is a simple way of wandering around thoughts that are naturally interconnected, but appear in a sequential fashion.
 
-A detective board appears to give you a way of layering though upon thought, grouping them, reflecting on them as they are layed and layered out before you without vanishing and fleeting into each other and then working with the grouped and reflected whole.
+A detective board appears to give you a way of layering thought upon thought, grouping them, reflecting on them as they are layed and layered out before you without vanishing and fleeting into each other and then working with the grouped and reflected whole.
 
 I find it immensely useful for learning, analyzing, explaining, structuring problems and a lot of other related mental activities.
 
