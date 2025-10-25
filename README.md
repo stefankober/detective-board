@@ -17,7 +17,7 @@ No cookies, no tracking.
 ## Moving Objects
 
 1. Click and hold into empty space: move everything
-2. Right click on an object: move that object
+2. Right click on an object (except thread, they move with the pins): move that object
 
 ## Delete Objects
 
