@@ -39,7 +39,7 @@ See screenshot below or test page: https://stefankober.github.io/detective-board
 
 # Why use it?
 
-For me it is a natural way of wandering around thoughts that are naturally interconnected, but appear in a sequential fashion.
+For me it is a simple way of wandering around thoughts that are naturally interconnected, but appear in a sequential fashion.
 
 A detective board appears to give you a way of layering though upon thought, grouping them, reflecting on them as they are layed and layered out before you without vanishing and fleeting into each other and then working with the grouped and reflected whole.
 
