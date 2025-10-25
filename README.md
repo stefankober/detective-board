@@ -43,6 +43,6 @@ For me it is a simple way of wandering around thoughts that are naturally interc
 
 A detective board appears to give you a way of layering though upon thought, grouping them, reflecting on them as they are layed and layered out before you without vanishing and fleeting into each other and then working with the grouped and reflected whole.
 
-I find it immensely useful for learning, analyzing, explaining and a lot of other related mental activities.
+I find it immensely useful for learning, analyzing, explaining, structuring problems and a lot of other related mental activities.
 
 The option to use images is additionally helpful for me, as I can barely see anything with imagination (I am largely an aphantast). So I can keep visual clues next to my discursive thoughts.
