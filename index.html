@@ -343,10 +343,6 @@ line.thread.live { stroke-dasharray: 5 4; }
       if (ev.key === 'Enter' && !ev.ctrlKey) {
         ev.preventDefault();
         note.removeAttribute('contenteditable');
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        meta.textContent = new Date().toLocaleString();
-        note.appendChild(meta);
       }
     });
 
@@ -399,7 +395,7 @@ line.thread.live { stroke-dasharray: 5 4; }
     const data = {
         pins: Array.from(state.pins.entries()).map(([id, p]) => ({ id, x: p.x, y: p.y })),
         threads: state.threads.map(t => ({ aId: t.aId, bId: t.bId })),
-        notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), html: n.innerHTML })),
+        notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), text: n.textContent })),
         images: Array.from(world.querySelectorAll('img.image')).map(i => ({ id: i.dataset.id, x: parseFloat(i.style.left), y: parseFloat(i.style.top), src: i.src }))
     };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -471,7 +467,7 @@ line.thread.live { stroke-dasharray: 5 4; }
           const note = document.createElement('div');
           note.className = 'note';
           note.dataset.id = n.id;
-          note.innerHTML = n.html;
+          note.textContent = n.text;
           positionEl(note, n.x, n.y, true);
           world.appendChild(note);
         }
