@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Local Detective Board</title>
+<style>
+html, body { height: 100%; margin: 0; background: #0e0f12; color: #eaeaea; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header { padding: 8px 12px; background: #16181d; border-bottom: 1px solid #23252b; font-size: 14px; display: flex; gap: 12px; align-items: center; }
+header button { background: #2b2f36; border: 1px solid #3c3f47; color: #fff; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+header button:hover { background: #3b3f48; }
+header .hint { opacity: .8 }
+header kbd { background: #23252b; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
+
+
+#board-wrap { position: relative; overflow: hidden; }
+#board-bg { position: absolute; inset: 0; background-image: radial-gradient(#2b2f36 1px, transparent 1px), radial-gradient(#1c1f24 1px, transparent 1px); background-position: 0 0, 25px 25px; background-size: 50px 50px; }
+
+
+#viewport { position: absolute; inset: 0; cursor: grab; }
+#viewport.grabbing { cursor: grabbing; }
+
+
+#world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+
+
+svg#wires { position: absolute; top: 0; left: 0; width: 100000px; height: 100000px; pointer-events: none; z-index: 100; }
+
+
+.pin { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #f44336; border: 1px solid #7a1e18; box-shadow: 0 0 0 2px rgba(0,0,0,.35); transform: translate(-5px, -5px); z-index: 200; }
+.pin::after { content: ""; position: absolute; left: 4px; top: -10px; width: 2px; height: 10px; background: #7a1e18; }
+
+
+.note { position: absolute; min-width: 160px; max-width: 320px; background: #fff6a9; color: #222; border: 1px solid #e0d987; box-shadow: 0 10px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.6); border-radius: 6px; padding: 8px; transform: translate(-50%, -50%); }
+.note[contenteditable="true"] { outline: 2px dashed #c7bf77; }
+.note .meta { font-size: 11px; color: #6b6b6b; margin-top: 6px; user-select: none; }
+
+
+.image { position: absolute; transform: translate(-50%, -50%); max-width: 640px; max-height: 480px; box-shadow: 0 10px 18px rgba(0,0,0,.5); border: 2px solid #1c1f24; border-radius: 6px; background: #111; }
+
+
+line.thread { stroke: #ffffff; stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 0 1px rgba(0,0,0,.7)); }
+line.thread.live { stroke-dasharray: 5 4; }
+
+
+#help { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.6); border: 1px solid #2a2d33; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
+#help b { color: #fff; }
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+<button id="saveBtn">💾 Save</button>
+<button id="loadBtn">📂 Load</button>
+<div class="hint">Local Detective Board</div>
+<div class="hint">Double-click: <kbd>note</kbd></div>
+<div class="hint">Right-click: <kbd>pin + thread</kbd></div>
+<div class="hint">Right-drag: <kbd>move</kbd></div>
+<div class="hint">Wheel: <kbd>zoom</kbd></div>
+<div class="hint">Paste image: <kbd>Ctrl+V</kbd></div>
+<div class="hint">Ctrl + click: <kbd>Delete element</kbd></div>
+</header>
+
+
+<div id="board-wrap">
+<div id="board-bg"></div>
+<div id="viewport">
+<div id="world">
+<svg id="wires"></svg>
+</div>
+<div id="help">
+<div><b>Tips</b></div>
+<div>Right-click drag = connect pins.</div>
+<div>Right-drag = move items. Double-click = add note. Paste = image.</div>
+</div>
+</div>
+</div>
+</div>
+  <script>
+    // Basic pan/zoom for an infinite-feel world
+    const viewport = document.getElementById('viewport');
+    const world = document.getElementById('world');
+    const wires = document.getElementById('wires');
+
+    // Make the world a huge canvas area
+    const WORLD_W = 100000; // px
+    const WORLD_H = 100000; // px
+    world.style.width = WORLD_W + 'px';
+    world.style.height = WORLD_H + 'px';
+
+    let state = {
+      scale: 1,
+      minScale: 0.25,
+      maxScale: 2.5,
+      panX: WORLD_W / 2 - window.innerWidth / 2,
+      panY: WORLD_H / 2 - window.innerHeight / 2,
+      draggingBackground: false,
+      dragStart: {x:0, y:0},
+      panStart: {x:0, y:0},
+      placingThread: null, // {startPinId, lineEl}
+      draggingItem: null, // {el, dx, dy}
+      idCounter: 1,
+      pins: new Map(), // id -> {x,y}
+      threads: [], // {aId, bId, lineEl}
+    };
+
+    function applyTransform() {
+      world.style.transform = `translate(${-state.panX}px, ${-state.panY}px) scale(${state.scale})`;
+      // wires is inside world, so no separate transform needed
+    }
+
+    applyTransform();
+
+    function screenToWorld(clientX, clientY) {
+      const rect = viewport.getBoundingClientRect();
+      const sx = (clientX - rect.left);
+      const sy = (clientY - rect.top);
+      return {
+        x: (sx + state.panX) / state.scale,
+        y: (sy + state.panY) / state.scale
+      };
+    }
+
+    function worldToScreen(x, y) {
+      const rect = viewport.getBoundingClientRect();
+      return {
+        x: (x * state.scale) - state.panX + rect.left,
+        y: (y * state.scale) - state.panY + rect.top
+      };
+    }
+
+    // Background panning with left mouse
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        // Only start background pan if we clicked empty space
+        if (e.target === viewport || e.target === world || e.target === document.getElementById('board-bg')) {
+          state.draggingBackground = true;
+          viewport.classList.add('grabbing');
+          state.dragStart = { x: e.clientX, y: e.clientY };
+          state.panStart = { x: state.panX, y: state.panY };
+        }
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (state.draggingBackground) {
+        const dx = e.clientX - state.dragStart.x;
+        const dy = e.clientY - state.dragStart.y;
+        state.panX = state.panStart.x - dx;
+        state.panY = state.panStart.y - dy;
+        applyTransform();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      state.draggingBackground = false;
+      viewport.classList.remove('grabbing');
+    });
+
+    // Zoom with wheel
+    viewport.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey) {
+        e.preventDefault();
+        const { x, y } = screenToWorld(e.clientX, e.clientY);
+        const prevScale = state.scale;
+        const delta = Math.sign(e.deltaY);
+        state.scale = Math.min(state.maxScale, Math.max(state.minScale, state.scale * (delta > 0 ? 0.9 : 1.1)));
+        // Keep mouse position stable while zooming
+        const { x: sx, y: sy } = worldToScreen(x, y);
+        state.panX += (sx - e.clientX);
+        state.panY += (sy - e.clientY);
+        applyTransform();
+      }
+    }, { passive: false });
+
+    // Prevent the default context menu so right-click is ours
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+
+    function newId(prefix) { return prefix + (state.idCounter++); }
+
+    // Create pin at world coords
+    function createPin(x, y) {
+      const id = newId('pin_');
+      const el = document.createElement('div');
+      el.className = 'pin';
+      el.dataset.id = id;
+      positionEl(el, x, y, true);
+      world.appendChild(el);
+      state.pins.set(id, { x, y, el });
+      return { id, el };
+    }
+
+    // Position element by world coords
+    function positionEl(el, x, y, center=false) {
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      if (center && !el.classList.contains('pin')) {
+        el.style.transform = 'translate(-50%, -50%)';
+      }
+    }
+
+    // Create a thread line connecting two pins
+    function createThread(aId, bId) {
+      const a = state.pins.get(aId);
+      const b = state.pins.get(bId);
+      if (!a || !b) return null;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.classList.add('thread');
+      wires.appendChild(line);
+      updateLine(line, a.x, a.y, b.x, b.y);
+      const t = { aId, bId, lineEl: line };
+      state.threads.push(t);
+      return t;
+    }
+
+    function updateLine(line, x1, y1, x2, y2) {
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+    }
+
+    function updateConnectedThreads(pinId) {
+      const p = state.pins.get(pinId);
+      if (!p) return;
+      for (const t of state.threads) {
+        if (t.aId === pinId || t.bId === pinId) {
+          const a = state.pins.get(t.aId);
+          const b = state.pins.get(t.bId);
+          if (a && b) updateLine(t.lineEl, a.x, a.y, b.x, b.y);
+        }
+      }
+    }
+
+    // Start right-drag behavior: either move item, or place thread from empty space
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return; // only right button
+      const target = e.target;
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+
+      // Moving an existing item by right-drag
+      if (target.classList.contains('pin') || target.classList.contains('note') || target.classList.contains('image')) {
+        const bb = target.getBoundingClientRect();
+        const offset = screenToWorld(bb.left + bb.width/2, bb.top + bb.height/2);
+        state.draggingItem = { el: target, dx: worldPos.x - offset.x, dy: worldPos.y - offset.y };
+        return;
+      }
+
+      // Starting a thread from empty space places first pin immediately
+      if (target === viewport || target === world || target === document.getElementById('board-bg')) {
+        const { id: aId } = createPin(worldPos.x, worldPos.y);
+        const live = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        live.classList.add('thread', 'live');
+        wires.appendChild(live);
+        updateLine(live, worldPos.x, worldPos.y, worldPos.x, worldPos.y);
+        state.placingThread = { startPinId: aId, lineEl: live };
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+      // Move item with right-drag
+      if (state.draggingItem) {
+        const { el, dx, dy } = state.draggingItem;
+        const x = worldPos.x - dx;
+        const y = worldPos.y - dy;
+        positionEl(el, x, y, !el.classList.contains('pin'));
+        // Update stored coords and threads if pin
+        if (el.classList.contains('pin')) {
+          const id = el.dataset.id;
+          const pin = state.pins.get(id);
+          if (pin) { pin.x = x; pin.y = y; updateConnectedThreads(id); }
+        }
+        return;
+      }
+
+      // Live thread preview
+      if (state.placingThread) {
+        const a = state.pins.get(state.placingThread.startPinId);
+        if (a) updateLine(state.placingThread.lineEl, a.x, a.y, worldPos.x, worldPos.y);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      // End item drag
+      if (state.draggingItem && e.button === 2) {
+        state.draggingItem = null;
+      }
+
+      // Finish placing thread on right button release
+      if (state.placingThread && e.button === 2) {
+        const worldPos = screenToWorld(e.clientX, e.clientY);
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        let bPinId = null;
+        if (target && target.classList && target.classList.contains('pin')) {
+          bPinId = target.dataset.id;
+        } else {
+          bPinId = createPin(worldPos.x, worldPos.y).id;
+        }
+        // Remove live line and create solid thread
+        state.placingThread.lineEl.remove();
+        createThread(state.placingThread.startPinId, bPinId);
+        state.placingThread = null;
+      }
+    });
+
+    // Double click to create a note
+    viewport.addEventListener('dblclick', (e) => {
+      const target = e.target;
+      // If double click on an existing note, re-enter edit mode
+      if (target.classList.contains('note')) {
+        target.setAttribute('contenteditable', 'true');
+        target.focus();
+        return;
+      }
+      const { x, y } = screenToWorld(e.clientX, e.clientY);
+      createNote(x, y);
+    });
+
+    function createNote(x, y) {
+      const id = newId('note_');
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.dataset.id = id;
+      note.setAttribute('contenteditable', 'true');
+      note.textContent = '';
+      positionEl(note, x, y, true);
+      world.appendChild(note);
+      note.focus();
+
+    // Commit on Enter, allow Ctrl+Enter for new line
+    note.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && ev.ctrlKey) {
+        // insert a line break
+        ev.preventDefault();
+        document.execCommand('insertHTML', false, '<br><br>');
+        return;
+      }
+      if (ev.key === 'Enter' && !ev.ctrlKey) {
+        ev.preventDefault();
+        note.removeAttribute('contenteditable');
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = new Date().toLocaleString();
+        note.appendChild(meta);
+      }
+    });
+
+      // Right-drag to move handled globally
+      return note;
+    }
+
+    // Paste image from clipboard at cursor
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const img = document.createElement('img');
+            img.src = evt.target.result; // Base64 data URL
+            img.className = 'image';
+            img.dataset.id = newId('img_');
+            const { x, y } = screenToWorld(lastMouse.x, lastMouse.y);
+            positionEl(img, x, y, true);
+            world.appendChild(img);
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    // Track last mouse for paste placement
+    let lastMouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+    window.addEventListener('mousemove', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
+
+    // Utility: clicking a pin should not start background pan with left button
+    world.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && (e.target.classList.contains('pin') || e.target.classList.contains('note') || e.target.classList.contains('image'))) {
+        e.stopPropagation();
+      }
+    }, true);
+
+    // Keep threads updated when window resizes (not strictly necessary since we use world coords)
+    window.addEventListener('resize', applyTransform);
+
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+
+
+    saveBtn.addEventListener('click', () => {
+    const data = {
+        pins: Array.from(state.pins.entries()).map(([id, p]) => ({ id, x: p.x, y: p.y })),
+        threads: state.threads.map(t => ({ aId: t.aId, bId: t.bId })),
+        notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), text: n.textContent })),
+        images: Array.from(world.querySelectorAll('img.image')).map(i => ({ id: i.dataset.id, x: parseFloat(i.style.left), y: parseFloat(i.style.top), src: i.src }))
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'detective_board.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    world.addEventListener('click', (e) => {
+      if (!e.ctrlKey) return;          // only when Ctrl held
+      const el = e.target;
+      if (!(el instanceof HTMLElement)) return;
+
+      // Delete pins and their threads
+      if (el.classList.contains('pin')) {
+        const pinId = el.dataset.id;
+        // remove threads connected to this pin
+        state.threads = state.threads.filter(t => {
+          if (t.aId === pinId || t.bId === pinId) {
+            t.lineEl.remove();
+            return false;
+          }
+          return true;
+        });
+        state.pins.delete(pinId);
+        el.remove();
+        return;
+      }
+
+    // Delete notes or images
+    if (el.classList.contains('note') || el.classList.contains('image')) {
+      el.remove();
+      return;
+    }
+    });
+
+
+    loadBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Remove existing elements except the wires SVG
+        world.querySelectorAll('.pin, .note, .image').forEach(el => el.remove());
+        wires.querySelectorAll('.thread').forEach(el => el.remove());
+
+        state.pins.clear();
+        state.threads = [];
+
+        // Recreate pins directly under their original IDs
+        for (const p of data.pins) {
+          const el = document.createElement('div');
+          el.className = 'pin';
+          el.dataset.id = p.id;
+          positionEl(el, p.x, p.y);
+          world.appendChild(el);
+          state.pins.set(p.id, { x: p.x, y: p.y, el });
+        }
+
+        // Recreate notes
+        for (const n of data.notes) {
+          const note = document.createElement('div');
+          note.className = 'note';
+          note.dataset.id = n.id;
+          note.textContent = n.text;
+          positionEl(note, n.x, n.y, true);
+          world.appendChild(note);
+        }
+
+        // Recreate images (Base64 included)
+        for (const i of data.images) {
+          const img = document.createElement('img');
+          img.className = 'image';
+          img.dataset.id = i.id;
+          img.src = i.src; // valid base64 URL
+          positionEl(img, i.x, i.y, true);
+          world.appendChild(img);
+        }
+
+        // Recreate threads now that all pins exist
+        for (const t of data.threads) {
+          createThread(t.aId, t.bId);
+        }
+
+        // Refresh connections
+        for (const [id] of state.pins) updateConnectedThreads(id);
+
+        // Resume id counter from highest existing number
+        const allIds = [
+          ...data.pins.map(p => p.id),
+          ...data.notes.map(n => n.id),
+          ...data.images.map(i => i.id)
+        ];
+        const nums = allIds.map(id => parseInt(id.replace(/\\D/g, ''))).filter(Number.isFinite);
+        state.idCounter = Math.max(1, ...nums) + 1;
+      };
+      input.click();
+    });
+  </script>
+</body>
+</html>
