@@ -69,3 +69,7 @@ But this detective board is what I am using now for a lot of things, and it fits
 - Research or writing: cluster related ideas, sources, and arguments as they develop.
 
 - Exploration: wander around a thought without losing it to scrolling or switching tabs.
+
+Here is a slightly blurred version of reading a technical book:
+
+<img width="1431" height="862" alt="image" src="https://github.com/user-attachments/assets/d9b9e818-b080-441e-acfe-bcf6608bfec5" />
