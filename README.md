@@ -37,7 +37,7 @@ Download index.html. Open in browser. You can have open more than one instance w
 
 The boards are saved as JSON objects with images encoded and embedded. So using vcs will work.
 
-Diff'd text in notes will be shown correctly. Changing coordinates or images will tend to not be human readable.
+To diff use something like `vimdiff <(jq -S . a.json) <(jq -S . b.json)`.
 
 # What does it look like?
 
