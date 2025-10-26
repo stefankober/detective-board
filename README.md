@@ -8,7 +8,7 @@ No cookies, no tracking.
 
 # How to use it?
 
-Download index.html. Open in browser. You can have open more than one without interference (unless you edit the same file of course).
+Download index.html. Open in browser. You can have open more than one instance without interference (unless you edit the same file of course).
 
 ## Creating Objects
 
