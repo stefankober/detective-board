@@ -8,11 +8,11 @@ No cookies, no tracking.
 
 # How to use it?
 
-Download index.html. Open in browser.
+Download index.html. Open in browser. You can have open more than one without interference (unless you edit the same file of course).
 
 ## Creating Objects
 
-1. Double click on background creates a **note**. Type text. Click outside of the note. You can still edit it later by doubleclicking on the note.
+1. Double click on background creates a **note**. Type text. Click outside of the note to finalize. You can still edit it later by doubleclicking on the note.
 2. Copy an **image** somewhere else. Strg + V pastes the image.
 3. Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
 
