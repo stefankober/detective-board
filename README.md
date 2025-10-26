@@ -20,7 +20,7 @@ Download index.html. Open in browser. You can have open more than one instance w
 ## Moving Objects
 
 1. Click and hold into empty space: move everything.
-2. Right click on an object (except thread, they move with the pins): move that object (left click is for copying text from notes).
+2. Right click on an object (except threads, they move with the pins): move that object (left click is for copying text from notes).
 
 ## Delete Objects
 
