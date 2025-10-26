@@ -46,6 +46,9 @@ line.thread.live { stroke-dasharray: 5 4; }
 
 #help { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.6); border: 1px solid #2a2d33; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
 #help b { color: #fff; }
+
+.arrow { position: absolute; width: 60px; height: 24px; transform: translate(-50%, -50%) rotate(0deg); z-index: 150; pointer-events: auto; }
+.arrow svg { width: 100%; height: 100%; fill: none; stroke: #4da3ff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); }
 </style>
 </head>
 <body>
@@ -53,6 +56,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <header>
 <button id="saveBtn">💾 Save</button>
 <button id="loadBtn">📂 Load</button>
+<button id="arrowBtn">➡ Arrow</button>
 <div class="hint">Local Detective Board</div>
 <div class="hint">Double-click: <kbd>note</kbd></div>
 <div class="hint">Right-click + hold + drag: <kbd>pin + thread + pin</kbd></div>
@@ -199,7 +203,9 @@ line.thread.live { stroke-dasharray: 5 4; }
       el.style.left = x + 'px';
       el.style.top = y + 'px';
       if (center && !el.classList.contains('pin')) {
-        el.style.transform = 'translate(-50%, -50%)';
+        const match = el.style.transform.match(/rotate\([^)]*\)/);
+        const rotation = match ? match[0] : '';
+        el.style.transform = `translate(-50%, -50%) ${rotation}`;
       }
     }
 
@@ -243,7 +249,7 @@ line.thread.live { stroke-dasharray: 5 4; }
       const worldPos = screenToWorld(e.clientX, e.clientY);
 
       // Moving an existing item by right-drag
-      if (target.classList.contains('pin') || target.classList.contains('note') || target.classList.contains('image')) {
+      if (target.classList.contains('pin') || target.classList.contains('note') || target.classList.contains('image') ||  target.classList.contains('arrow')) {
         const bb = target.getBoundingClientRect();
         const offset = screenToWorld(bb.left + bb.width/2, bb.top + bb.height/2);
         state.draggingItem = { el: target, dx: worldPos.x - offset.x, dy: worldPos.y - offset.y };
@@ -387,7 +393,13 @@ line.thread.live { stroke-dasharray: 5 4; }
         pins: Array.from(state.pins.entries()).map(([id, p]) => ({ id, x: p.x, y: p.y })),
         threads: state.threads.map(t => ({ aId: t.aId, bId: t.bId })),
         notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), text: n.textContent })),
-        images: Array.from(world.querySelectorAll('img.image')).map(i => ({ id: i.dataset.id, x: parseFloat(i.style.left), y: parseFloat(i.style.top), src: i.src }))
+        images: Array.from(world.querySelectorAll('img.image')).map(i => ({ id: i.dataset.id, x: parseFloat(i.style.left), y: parseFloat(i.style.top), src: i.src })),
+        arrows: Array.from(world.querySelectorAll('.arrow')).map(a => ({
+          id: a.dataset.id,
+          x: parseFloat(a.style.left),
+          y: parseFloat(a.style.top),
+          rotation: parseFloat(a.style.transform.match(/rotate\(([-\d.]+)/)?.[1] || 0)
+        }))
     };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -419,7 +431,7 @@ line.thread.live { stroke-dasharray: 5 4; }
       }
 
     // Delete notes or images
-    if (el.classList.contains('note') || el.classList.contains('image')) {
+    if (el.classList.contains('note') || el.classList.contains('image') || el.classList.contains('arrow')) {
       el.remove();
       return;
     }
@@ -486,6 +498,21 @@ line.thread.live { stroke-dasharray: 5 4; }
           world.appendChild(img);
         }
 
+        for (const a of data.arrows || []) {
+          const arrow = document.createElement('div');
+          arrow.className = 'arrow';
+          arrow.dataset.id = a.id;
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.style.pointerEvents = 'none';
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', 'M5 12 H50 M50 12 L40 4 M50 12 L40 20');
+          svg.appendChild(path);
+          arrow.appendChild(svg);
+          positionEl(arrow, a.x, a.y, true);
+          arrow.style.transform = `translate(-50%, -50%) rotate(${a.rotation}deg)`;
+          world.appendChild(arrow);
+        }
+
         // Recreate threads now that all pins exist
         for (const t of data.threads) {
           createThread(t.aId, t.bId);
@@ -505,6 +532,99 @@ line.thread.live { stroke-dasharray: 5 4; }
       };
       input.click();
     });
+
+    const arrowBtn = document.getElementById('arrowBtn');
+    arrowBtn.addEventListener('click', () => {
+      // remove old chooser if open
+      const old = document.getElementById('arrowChooser');
+      if (old) old.remove();
+
+      const chooser = document.createElement('div');
+      chooser.id = 'arrowChooser';
+      chooser.style.position = 'absolute';
+      chooser.style.top = '40px';
+      chooser.style.left = '10px';
+      chooser.style.background = '#1a1c20';
+      chooser.style.border = '1px solid #333';
+      chooser.style.borderRadius = '6px';
+      chooser.style.padding = '6px';
+      chooser.style.display = 'grid';
+      chooser.style.gridTemplateColumns = 'repeat(3, 40px)';
+      chooser.style.gap = '4px';
+      chooser.style.zIndex = '999';
+      chooser.style.boxShadow = '0 4px 8px rgba(0,0,0,.6)';
+
+      const dirs = [
+        ['NW', 225], ['N', 270], ['NE', 315],
+        ['W', 180], [null, null], ['E', 0],
+        ['SW', 135], ['S', 90], ['SE', 45]
+      ];
+
+      for (const [name, angle] of dirs) {
+        const cell = document.createElement('div');
+        cell.style.width = '40px';
+        cell.style.height = '40px';
+        cell.style.display = 'flex';
+        cell.style.alignItems = 'center';
+        cell.style.justifyContent = 'center';
+        if (!name) { chooser.appendChild(cell); continue; }
+        cell.style.cursor = 'pointer';
+        cell.title = name;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '30');
+        svg.setAttribute('height', '30');
+        svg.style.pointerEvents = 'none';
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M5 12 H25 M25 12 L18 6 M25 12 L18 18');
+        path.setAttribute('stroke', '#4da3ff');
+        path.setAttribute('stroke-width', '3');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('fill', 'none');
+        svg.style.transform = `rotate(${angle}deg)`;
+        svg.appendChild(path);
+        cell.appendChild(svg);
+
+        cell.addEventListener('click', () => {
+          chooser.remove();
+          createArrow(angle);
+        });
+
+        chooser.appendChild(cell);
+      }
+
+      document.body.appendChild(chooser);
+
+      // click outside to close
+      const close = (e) => {
+        if (!chooser.contains(e.target)) {
+          chooser.remove();
+          document.removeEventListener('click', close);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', close), 10);
+    });
+
+    function createArrow(angle) {
+      const id = newId('arrow_');
+      const arrow = document.createElement('div');
+      arrow.className = 'arrow';
+      arrow.dataset.id = id;
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.pointerEvents = 'none';
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M5 12 H50 M50 12 L40 4 M50 12 L40 20');
+      svg.appendChild(path);
+      arrow.appendChild(svg);
+
+      const x = state.panX + window.innerWidth / 2;
+      const y = state.panY + window.innerHeight / 2;
+      positionEl(arrow, x, y, true);
+      arrow.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      world.appendChild(arrow);
+    }
   </script>
 </body>
 </html>
