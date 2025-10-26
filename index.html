@@ -500,7 +500,7 @@ line.thread.live { stroke-dasharray: 5 4; }
           ...data.notes.map(n => n.id),
           ...data.images.map(i => i.id)
         ];
-        const nums = allIds.map(id => parseInt(id.replace(/\\D/g, ''))).filter(Number.isFinite);
+        const nums = allIds.map(id => parseInt(id.replace(/\D/g, ''))).filter(Number.isFinite);
         state.idCounter = Math.max(1, ...nums) + 1;
       };
       input.click();
