@@ -1,6 +1,6 @@
 # What is it?
 
-A detective board.
+A detective board (a.k.a. evidence board, crime scene board).
 
 Open source, full privacy, only JS + HTML5. 
 Runs locally in browser. 
@@ -12,26 +12,26 @@ Download index.html. Open in browser.
 
 ## Creating Objects
 
-1. Double click creates a **note**. Type text. Click outside of the note. You can change that text later. Finalize the note by hitting enter (you can still edit it later by doubleclicking). Shift + Enter is newline.
+1. Double click on background creates a **note**. Type text. Click outside of the note. You can still edit it later by doubleclicking on the note.
 2. Copy an **image** somewhere else. Strg + V pastes the image.
-3. Right click into empty space to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
+3. Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
 
 ## Moving Objects
 
-1. Click and hold into empty space: move everything
-2. Right click on an object (except thread, they move with the pins): move that object
+1. Click and hold into empty space: move everything.
+2. Right click on an object (except thread, they move with the pins): move that object (left click is for copying text from notes).
 
 ## Delete Objects
 
-1. Strg + click on object to delete
+1. Strg + click on object to delete.
 
 ## Zoom in or out
 
-1. Use Mousewheel
+1. Use Mousewheel.
 
 ## Save and Load
 
-1. Use save and load buttons
+1. Use save and load buttons.
 
 # What does it look like?
 
