@@ -33,6 +33,12 @@ Download index.html. Open in browser. You can have open more than one instance w
 
 1. Use save and load buttons.
 
+## Version Control Systems
+
+The boards are saved as JSON objects with images encoded and embedded. So using vcs will work.
+
+Diff'd text in notes will be shown correctly. Changing coordinates or images will tend to not be human readable.
+
 # What does it look like?
 
 See screenshot below or test page: https://stefankober.github.io/detective-board/
