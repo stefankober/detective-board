@@ -55,3 +55,17 @@ A detective board appears to give you a way of layering thought upon thought, gr
 I find it immensely useful for learning, analyzing, explaining, structuring problems and a lot of other related mental activities.
 
 The option to use images is additionally helpful for me, as I can barely see anything with imagination (I am largely an aphantast). So I can keep visual clues next to my discursive thoughts.
+
+I tried a lot of tools to fit my thinking style: note taking apps like Loqseq or Joplin. Diagram as code tools. Draw.io. Plain Vim. Novelwriter. 
+
+Those are all good tools, and you should try them too if you have not found yours.
+
+But this detective board is what I am using now for a lot of things, and it fits my thinking style perfectly:
+
+- Incident analysis: trace events, actors, and evidence until the story becomes clear.
+
+- Learning: take screenshots from scripts or books, annotate them, and follow questions outward. Trace the logic with arrows.
+
+- Research or writing: cluster related ideas, sources, and arguments as they develop.
+
+- Exploration: wander around a thought without losing it to scrolling or switching tabs.
