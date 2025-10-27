@@ -10,6 +10,10 @@ No cookies, no tracking.
 
 Download index.html. Open in browser. You can have open more than one instance without interference (unless you save to the same file of course).
 
+Or use the test page here: https://stefankober.github.io/detective-board/
+
+Autobackup data is stored only locally in browser storage and does not leave your device.
+
 ## Creating Objects
 
 1. Double click on background creates a **note**. Type text. Click outside of the note to finalize. You can still edit it later by doubleclicking on the note.
