@@ -24,7 +24,7 @@ Autobackup data is stored only locally in browser storage and does not leave you
 ## Moving Objects
 
 1. Click and hold into empty space: move everything.
-2. Click and hold on an object (except threads, they move with the pins): move that object (left click is for copying text from notes).
+2. Click and hold on an object (except threads, they move with the pins): move that object.
 
 ## Delete Objects
 
