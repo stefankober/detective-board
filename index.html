@@ -56,6 +56,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <header>
 <button id="saveBtn">💾 Save</button>
 <button id="loadBtn">📂 Load</button>
+<button id="restoreBackupBtn">⏲ Autobackup</button>
 <button id="arrowBtn">➡ Arrow</button>
 <div class="hint">Local Detective Board</div>
 <div class="hint">Double-click: <kbd>note</kbd></div>
@@ -447,88 +448,7 @@ line.thread.live { stroke-dasharray: 5 4; }
         if (!file) return;
         const text = await file.text();
         const data = JSON.parse(text);
-
-        // Remove existing elements except the wires SVG
-        world.querySelectorAll('.pin, .note, .image').forEach(el => el.remove());
-        wires.querySelectorAll('.thread').forEach(el => el.remove());
-
-        state.pins.clear();
-        state.threads = [];
-
-        // Recreate pins directly under their original IDs
-        for (const p of data.pins) {
-          const el = document.createElement('div');
-          el.className = 'pin';
-          el.dataset.id = p.id;
-          positionEl(el, p.x, p.y);
-          world.appendChild(el);
-          state.pins.set(p.id, { x: p.x, y: p.y, el });
-        }
-
-        // Recreate notes
-        for (const n of data.notes) {
-          const note = document.createElement('div');
-          note.className = 'note';
-          note.dataset.id = n.id;
-          note.textContent = n.text;
-          positionEl(note, n.x, n.y, true);
-          world.appendChild(note);
-
-          // Attach the same keydown handler as new notes
-          note.addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter' && ev.ctrlKey) {
-              ev.preventDefault();
-              document.execCommand('insertHTML', false, '<br><br>');
-              return;
-            }
-            if (ev.key === 'Enter' && !ev.ctrlKey) {
-              ev.preventDefault();
-              note.removeAttribute('contenteditable');
-            }
-          });
-        }
-
-        // Recreate images (Base64 included)
-        for (const i of data.images) {
-          const img = document.createElement('img');
-          img.className = 'image';
-          img.dataset.id = i.id;
-          img.src = i.src; // valid base64 URL
-          positionEl(img, i.x, i.y, true);
-          world.appendChild(img);
-        }
-
-        for (const a of data.arrows || []) {
-          const arrow = document.createElement('div');
-          arrow.className = 'arrow';
-          arrow.dataset.id = a.id;
-          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.style.pointerEvents = 'none';
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', 'M5 12 H50 M50 12 L40 4 M50 12 L40 20');
-          svg.appendChild(path);
-          arrow.appendChild(svg);
-          positionEl(arrow, a.x, a.y, true);
-          arrow.style.transform = `translate(-50%, -50%) rotate(${a.rotation}deg)`;
-          world.appendChild(arrow);
-        }
-
-        // Recreate threads now that all pins exist
-        for (const t of data.threads) {
-          createThread(t.aId, t.bId);
-        }
-
-        // Refresh connections
-        for (const [id] of state.pins) updateConnectedThreads(id);
-
-        // Resume id counter from highest existing number
-        const allIds = [
-          ...data.pins.map(p => p.id),
-          ...data.notes.map(n => n.id),
-          ...data.images.map(i => i.id)
-        ];
-        const nums = allIds.map(id => parseInt(id.replace(/\D/g, ''))).filter(Number.isFinite);
-        state.idCounter = Math.max(1, ...nums) + 1;
+        loadFromData(data);
       };
       input.click();
     });
@@ -624,6 +544,235 @@ line.thread.live { stroke-dasharray: 5 4; }
       positionEl(arrow, x, y, true);
       arrow.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
       world.appendChild(arrow);
+    }
+
+    function serializeBoard() {
+      return JSON.stringify({
+        pins: Array.from(state.pins.entries()).map(([id, p]) => ({ id, x: p.x, y: p.y })),
+        threads: state.threads.map(t => ({ aId: t.aId, bId: t.bId })),
+        notes: Array.from(world.querySelectorAll('.note')).map(n => ({
+          id: n.dataset.id,
+          x: parseFloat(n.style.left),
+          y: parseFloat(n.style.top),
+          text: n.textContent
+        })),
+        images: Array.from(world.querySelectorAll('img.image')).map(i => ({
+          id: i.dataset.id,
+          x: parseFloat(i.style.left),
+          y: parseFloat(i.style.top),
+          src: i.src
+        })),
+        arrows: Array.from(world.querySelectorAll('.arrow')).map(a => ({
+          id: a.dataset.id,
+          x: parseFloat(a.style.left),
+          y: parseFloat(a.style.top),
+          rotation: parseFloat(a.style.transform.match(/rotate\(([-\d.]+)/)?.[1] || 0)
+        }))
+      });
+    }
+
+    function loadFromData(data) {
+      // Remove existing elements except the wires SVG
+      world.querySelectorAll('.pin, .note, .image').forEach(el => el.remove());
+      wires.querySelectorAll('.thread').forEach(el => el.remove());
+
+      state.pins.clear();
+      state.threads = [];
+
+      // Recreate pins directly under their original IDs
+      for (const p of data.pins || []) {
+        const el = document.createElement('div');
+        el.className = 'pin';
+        el.dataset.id = p.id;
+        positionEl(el, p.x, p.y);
+        world.appendChild(el);
+        state.pins.set(p.id, { x: p.x, y: p.y, el });
+      }
+
+      // Recreate notes
+      for (const n of data.notes || []) {
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.dataset.id = n.id;
+        note.textContent = n.text;
+        positionEl(note, n.x, n.y, true);
+        world.appendChild(note);
+
+        note.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter' && ev.ctrlKey) {
+            ev.preventDefault();
+            document.execCommand('insertHTML', false, '<br><br>');
+            return;
+          }
+          if (ev.key === 'Enter' && !ev.ctrlKey) {
+            ev.preventDefault();
+            note.removeAttribute('contenteditable');
+          }
+        });
+      }
+
+      // Recreate images
+      for (const i of data.images || []) {
+        const img = document.createElement('img');
+        img.className = 'image';
+        img.dataset.id = i.id;
+        img.src = i.src;
+        positionEl(img, i.x, i.y, true);
+        world.appendChild(img);
+      }
+
+      // Recreate arrows
+      for (const a of data.arrows || []) {
+        const arrow = document.createElement('div');
+        arrow.className = 'arrow';
+        arrow.dataset.id = a.id;
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.pointerEvents = 'none';
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M5 12 H50 M50 12 L40 4 M50 12 L40 20');
+        svg.appendChild(path);
+        arrow.appendChild(svg);
+        positionEl(arrow, a.x, a.y, true);
+        arrow.style.transform = `translate(-50%, -50%) rotate(${a.rotation}deg)`;
+        world.appendChild(arrow);
+      }
+
+      // Recreate threads
+      for (const t of data.threads || []) {
+        createThread(t.aId, t.bId);
+      }
+
+      // Refresh connections
+      for (const [id] of state.pins) updateConnectedThreads(id);
+
+      // Resume id counter
+      const allIds = [
+        ...(data.pins || []).map(p => p.id),
+        ...(data.notes || []).map(n => n.id),
+        ...(data.images || []).map(i => i.id)
+      ];
+      const nums = allIds.map(id => parseInt(id.replace(/\D/g, ''))).filter(Number.isFinite);
+      state.idCounter = Math.max(1, ...nums) + 1;
+    }
+
+    function autoBackup() {
+      try {
+        // Skip backup if board is empty
+        const isEmptyBoard = (
+          state.pins.size === 0 &&
+          state.threads.length === 0 &&
+          world.querySelectorAll('.note, .image, .arrow').length === 0
+        );
+
+        if (isEmptyBoard) {
+          console.log('Skipping backup — board is empty.');
+          return;
+        }
+
+        const data = serializeBoard();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const key = `detectiveBoardBackup_${timestamp}_${Math.random().toString(36).slice(2, 8)}`;
+        localStorage.setItem(key, data);
+        console.log('Auto-saved backup', key);
+        cleanupBackups();
+      } catch (err) {
+        console.error('Auto-backup failed:', err);
+      }
+    }
+
+    setInterval(autoBackup, 60000); // every minute
+
+    restoreBackupBtn.addEventListener('click', () => {
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith('detectiveBoardBackup_'))
+        .sort()
+        .reverse(); // newest first
+
+      if (!keys.length) {
+        alert('No backups found.');
+        return;
+      }
+
+      const chooser = document.createElement('div');
+      chooser.style.position = 'absolute';
+      chooser.style.top = '60px';
+      chooser.style.left = '10px';
+      chooser.style.background = '#1a1c20';
+      chooser.style.border = '1px solid #333';
+      chooser.style.borderRadius = '6px';
+      chooser.style.padding = '6px 10px';
+      chooser.style.display = 'flex';
+      chooser.style.flexDirection = 'column';
+      chooser.style.maxHeight = '300px';
+      chooser.style.overflowY = 'auto';
+      chooser.style.zIndex = '9999';
+      chooser.style.boxShadow = '0 4px 8px rgba(0,0,0,.6)';
+
+      const title = document.createElement('div');
+      title.textContent = 'Select backup to restore:';
+      title.style.marginBottom = '6px';
+      title.style.color = '#ccc';
+      chooser.appendChild(title);
+
+      for (const key of keys) {
+        const btn = document.createElement('button');
+        btn.textContent = key.replace('detectiveBoardBackup_', '');
+        btn.style.margin = '2px 0';
+        btn.style.background = '#2b2f36';
+        btn.style.color = '#fff';
+        btn.style.border = '1px solid #3c3f47';
+        btn.style.borderRadius = '4px';
+        btn.style.padding = '4px 6px';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => {
+          if (confirm(`Restore this backup?\n${key}`)) {
+            try {
+              const data = JSON.parse(localStorage.getItem(key));
+              loadFromData(data);
+              chooser.remove();
+            } catch (err) {
+              alert(`Failed to load backup:\n${err}`);
+            }
+          }
+        });
+        chooser.appendChild(btn);
+      }
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Cancel';
+      closeBtn.style.marginTop = '8px';
+      closeBtn.style.background = '#3a3d43';
+      closeBtn.style.color = '#ccc';
+      closeBtn.style.border = '1px solid #444';
+      closeBtn.style.borderRadius = '4px';
+      closeBtn.style.padding = '4px 6px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.addEventListener('click', () => chooser.remove());
+      chooser.appendChild(closeBtn);
+
+      document.body.appendChild(chooser);
+
+      // Close chooser when clicking outside
+      const outsideClickHandler = (e) => {
+        if (!chooser.contains(e.target)) {
+          chooser.remove();
+          document.removeEventListener('click', outsideClickHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', outsideClickHandler), 10);
+    });
+
+
+    function cleanupBackups(maxCount = 10) {
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith('detectiveBoardBackup_'))
+        .sort(); // oldest first, because ISO timestamps sort lexicographically
+
+      while (keys.length > maxCount) {
+        const key = keys.shift();
+        localStorage.removeItem(key);
+        console.log('Removed old backup', key);
+      }
     }
   </script>
 </body>
