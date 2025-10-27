@@ -61,8 +61,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <div class="hint">Local Detective Board</div>
 <div class="hint">Double-click: <kbd>note</kbd></div>
 <div class="hint">Right-click + hold + drag: <kbd>pin + thread + pin</kbd></div>
-<div class="hint">Drag (in background): <kbd>move everything</kbd></div>
-<div class="hint">Right-drag: <kbd>move element</kbd></div>
+<div class="hint">Drag: <kbd>move</kbd></div>
 <div class="hint">Wheel: <kbd>zoom</kbd></div>
 <div class="hint">Paste image: <kbd>Ctrl+V</kbd></div>
 <div class="hint">Shift + click: <kbd>Delete element</kbd></div>
@@ -78,7 +77,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <div id="help">
 <div><b>Tips</b></div>
 <div>Right-click drag = connect pins.</div>
-<div>Right-drag = move items. Double-click = add note. Paste = image.</div>
+<div>Drag = move items (one or all). Double-click = add note. Paste = image.</div>
 </div>
 </div>
 </div>
@@ -136,16 +135,42 @@ line.thread.live { stroke-dasharray: 5 4; }
       };
     }
 
-    // Background panning with left mouse
     viewport.addEventListener('mousedown', (e) => {
+      const target  = e.target;
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+
+      // --- LEFT BUTTON: pan background or drag object ---
       if (e.button === 0) {
-        // Only start background pan if we clicked empty space
-        if (e.target === viewport || e.target === world || e.target === document.getElementById('board-bg')) {
+        // 1) If empty space -> start panning
+        if (target === viewport || target === world || target === document.getElementById('board-bg')) {
           state.draggingBackground = true;
           viewport.classList.add('grabbing');
           state.dragStart = { x: e.clientX, y: e.clientY };
-          state.panStart = { x: state.panX, y: state.panY };
+          state.panStart  = { x: state.panX, y: state.panY };
+          e.preventDefault();
+          return;
         }
+
+        // 2) Try to drag the nearest draggable ancestor (pin/note/image/arrow)
+        const handle = target.closest('.pin, .note, .image, .arrow');
+        if (handle) {
+          const bb = handle.getBoundingClientRect();
+          const offset = screenToWorld(bb.left + bb.width/2, bb.top + bb.height/2);
+          state.draggingItem = { el: handle, dx: worldPos.x - offset.x, dy: worldPos.y - offset.y };
+          e.preventDefault(); // avoid text selection while dragging notes
+          return;
+        }
+      }
+
+      // --- RIGHT BUTTON: start thread (allow creating pin anywhere) ---
+      if (e.button === 2) {
+        const { id: aId } = createPin(worldPos.x, worldPos.y);
+        const live = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        live.classList.add('thread', 'live');
+        wires.appendChild(live);
+        updateLine(live, worldPos.x, worldPos.y, worldPos.x, worldPos.y);
+        state.placingThread = { startPinId: aId, lineEl: live };
+        e.preventDefault();
       }
     });
 
@@ -243,31 +268,6 @@ line.thread.live { stroke-dasharray: 5 4; }
       }
     }
 
-    // Start right-drag behavior: either move item, or place thread from empty space
-    viewport.addEventListener('mousedown', (e) => {
-      if (e.button !== 2) return; // only right button
-      const target = e.target;
-      const worldPos = screenToWorld(e.clientX, e.clientY);
-
-      // Moving an existing item by right-drag
-      if (target.classList.contains('pin') || target.classList.contains('note') || target.classList.contains('image') ||  target.classList.contains('arrow')) {
-        const bb = target.getBoundingClientRect();
-        const offset = screenToWorld(bb.left + bb.width/2, bb.top + bb.height/2);
-        state.draggingItem = { el: target, dx: worldPos.x - offset.x, dy: worldPos.y - offset.y };
-        return;
-      }
-
-      // Starting a thread from empty space places first pin immediately
-      if (target === viewport || target === world || target === document.getElementById('board-bg')) {
-        const { id: aId } = createPin(worldPos.x, worldPos.y);
-        const live = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        live.classList.add('thread', 'live');
-        wires.appendChild(live);
-        updateLine(live, worldPos.x, worldPos.y, worldPos.x, worldPos.y);
-        state.placingThread = { startPinId: aId, lineEl: live };
-      }
-    });
-
     window.addEventListener('mousemove', (e) => {
       const worldPos = screenToWorld(e.clientX, e.clientY);
       // Move item with right-drag
@@ -293,22 +293,22 @@ line.thread.live { stroke-dasharray: 5 4; }
     });
 
     window.addEventListener('mouseup', (e) => {
-      // End item drag
-      if (state.draggingItem && e.button === 2) {
+      if (state.draggingBackground) {
+        state.draggingBackground = false;
+        viewport.classList.remove('grabbing');
+      }
+      if (state.draggingItem) {
         state.draggingItem = null;
       }
 
-      // Finish placing thread on right button release
+      // Finish thread only on right-button release
       if (state.placingThread && e.button === 2) {
         const worldPos = screenToWorld(e.clientX, e.clientY);
         const target = document.elementFromPoint(e.clientX, e.clientY);
-        let bPinId = null;
-        if (target && target.classList && target.classList.contains('pin')) {
-          bPinId = target.dataset.id;
-        } else {
-          bPinId = createPin(worldPos.x, worldPos.y).id;
-        }
-        // Remove live line and create solid thread
+        const bPinId = (target && target.classList && target.classList.contains('pin'))
+          ? target.dataset.id
+          : createPin(worldPos.x, worldPos.y).id;
+
         state.placingThread.lineEl.remove();
         createThread(state.placingThread.startPinId, bPinId);
         state.placingThread = null;
@@ -317,6 +317,15 @@ line.thread.live { stroke-dasharray: 5 4; }
 
     // Double click to create a note
     viewport.addEventListener('dblclick', (e) => {
+    // Click anywhere outside an active note to finalize it
+    window.addEventListener('mousedown', (e) => {
+      const active = document.querySelector('.note[contenteditable="true"]');
+      if (!active) return;
+      if (!e.target.closest('.note')) {
+        active.removeAttribute('contenteditable');
+      }
+    });
+
       const target = e.target;
       // If double click on an existing note, re-enter edit mode
       if (target.classList.contains('note')) {
@@ -374,13 +383,6 @@ line.thread.live { stroke-dasharray: 5 4; }
     // Track last mouse for paste placement
     let lastMouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
     window.addEventListener('mousemove', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
-
-    // Utility: clicking a pin should not start background pan with left button
-    world.addEventListener('mousedown', (e) => {
-      if (e.button === 0 && (e.target.classList.contains('pin') || e.target.classList.contains('note') || e.target.classList.contains('image'))) {
-        e.stopPropagation();
-      }
-    }, true);
 
     // Keep threads updated when window resizes (not strictly necessary since we use world coords)
     window.addEventListener('resize', applyTransform);
@@ -573,7 +575,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 
     function loadFromData(data) {
       // Remove existing elements except the wires SVG
-      world.querySelectorAll('.pin, .note, .image').forEach(el => el.remove());
+      world.querySelectorAll('.pin, .note, .image, .arrow').forEach(el => el.remove());
       wires.querySelectorAll('.thread').forEach(el => el.remove());
 
       state.pins.clear();
@@ -655,21 +657,26 @@ line.thread.live { stroke-dasharray: 5 4; }
       state.idCounter = Math.max(1, ...nums) + 1;
     }
 
+    let lastBackupHash = null;
+
     function autoBackup() {
       try {
-        // Skip backup if board is empty
         const isEmptyBoard = (
           state.pins.size === 0 &&
           state.threads.length === 0 &&
           world.querySelectorAll('.note, .image, .arrow').length === 0
         );
-
-        if (isEmptyBoard) {
-          console.log('Skipping backup — board is empty.');
-          return;
-        }
+        if (isEmptyBoard) return;
 
         const data = serializeBoard();
+        const hash = awaitHash(data); // lightweight hash function
+
+        if (hash === lastBackupHash) {
+          console.log('No changes since last backup — skipped.');
+          return;
+        }
+        lastBackupHash = hash;
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const key = `detectiveBoardBackup_${timestamp}_${Math.random().toString(36).slice(2, 8)}`;
         localStorage.setItem(key, data);
@@ -678,6 +685,13 @@ line.thread.live { stroke-dasharray: 5 4; }
       } catch (err) {
         console.error('Auto-backup failed:', err);
       }
+    }
+
+    function awaitHash(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++)
+        h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+      return h >>> 0;
     }
 
     setInterval(autoBackup, 60000); // every minute
