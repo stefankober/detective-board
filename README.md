@@ -38,7 +38,7 @@ Download index.html. Open in browser. You can have open more than one instance w
 
 Autobackup backs up your work every minute to local browser storage (if not empty board), and keeps the last 10 versions.
 A click on the button, and you can chose to restore any.
-Works after crash.
+Works between sessions and after crash or accidental closing.
 
 If you want to change any of the parameters, change this in the code:
 - backup interval (in milliseconds):
