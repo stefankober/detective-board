@@ -24,7 +24,7 @@ Download index.html. Open in browser. You can have open more than one instance w
 
 ## Delete Objects
 
-1. Strg + click on object to delete.
+1. Shift + click on object to delete.
 
 ## Zoom in or out
 
