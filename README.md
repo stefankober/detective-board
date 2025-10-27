@@ -90,3 +90,8 @@ But this detective board is what I am using now for a lot of things, and it fits
 Here is a slightly blurred version of reading a technical book (slighty blurred because I do not own the rights to the screenshotted snippets):
 
 <img width="1431" height="862" alt="image" src="https://github.com/user-attachments/assets/d9b9e818-b080-441e-acfe-bcf6608bfec5" />
+
+
+# Kudos
+
+I took some inspiration from https://github.com/Fungeey/detectiveboard.
