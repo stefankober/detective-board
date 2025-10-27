@@ -24,7 +24,7 @@ Autobackup data is stored only locally in browser storage and does not leave you
 ## Moving Objects
 
 1. Click and hold into empty space: move everything.
-2. Right click on an object (except threads, they move with the pins): move that object (left click is for copying text from notes).
+2. Click and hold on an object (except threads, they move with the pins): move that object (left click is for copying text from notes).
 
 ## Delete Objects
 
@@ -40,11 +40,11 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 ## Autobackup
 
-Autobackup backs up your work every minute to local browser storage (if not empty board), and keeps the last 10 versions.
+Autobackup checks every minute if there are changes, and if so backs up your work to local browser storage (if not empty board), and keeps the last 10 versions.
 A click on the button, and you can chose to restore any.
 Works between sessions and after crash or accidental closing.
 
-If you want to change any of the parameters, change this in the code:
+If you want to change any of the parameters, change these numbers in the code:
 - backup interval (in milliseconds):
 `setInterval(autoBackup, 60000); // every minute`
 - keep last n:
