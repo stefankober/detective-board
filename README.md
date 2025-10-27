@@ -60,7 +60,7 @@ To diff use something like `vimdiff <(jq -S . a.json) <(jq -S . b.json)`.
 
 See screenshot below or go to test page: https://stefankober.github.io/detective-board/
 
-<img width="1755" height="857" alt="image" src="https://github.com/user-attachments/assets/2eeb65d7-1aff-4e54-a625-ca15d87fe07f" />
+<img width="1516" height="794" alt="image" src="https://github.com/user-attachments/assets/077ba943-a9c7-490c-a16f-1d382cbb54b8" />
 
 
 # Why use it?
