@@ -34,6 +34,18 @@ Download index.html. Open in browser. You can have open more than one instance w
 
 1. Use save and load buttons.
 
+## Autobackup
+
+Autobackup backs up your work every minute to local browser storage (if not empty board), and keeps the last 10 versions.
+A click on the button, and you can chose to restore any.
+Works after crash.
+
+If you want to change any of the parameters, change this in the code:
+- backup interval (in milliseconds):
+`setInterval(autoBackup, 60000); // every minute`
+- keep last n:
+`function cleanupBackups(maxCount = 10) {`
+
 ## Version Control Systems
 
 The boards are saved as JSON objects with images encoded and embedded. So using vcs will work.
@@ -42,7 +54,7 @@ To diff use something like `vimdiff <(jq -S . a.json) <(jq -S . b.json)`.
 
 # What does it look like?
 
-See screenshot below or test page: https://stefankober.github.io/detective-board/
+See screenshot below or go to test page: https://stefankober.github.io/detective-board/
 
 <img width="1755" height="857" alt="image" src="https://github.com/user-attachments/assets/2eeb65d7-1aff-4e54-a625-ca15d87fe07f" />
 
