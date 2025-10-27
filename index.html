@@ -64,7 +64,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <div class="hint">Right-drag: <kbd>move element</kbd></div>
 <div class="hint">Wheel: <kbd>zoom</kbd></div>
 <div class="hint">Paste image: <kbd>Ctrl+V</kbd></div>
-<div class="hint">Ctrl + click: <kbd>Delete element</kbd></div>
+<div class="hint">Shift + click: <kbd>Delete element</kbd></div>
 </header>
 
 
@@ -410,7 +410,7 @@ line.thread.live { stroke-dasharray: 5 4; }
     });
 
     world.addEventListener('click', (e) => {
-      if (!e.ctrlKey) return;          // only when Ctrl held
+      if (!e.shiftKey) return;          // only when Shift held
       const el = e.target;
       if (!(el instanceof HTMLElement)) return;
 
