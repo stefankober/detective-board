@@ -16,7 +16,7 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 ## Creating Objects
 
-1. Double click on background creates a **note**. Type text. Click outside of the note to finalize. You can still edit it later by doubleclicking on the note.
+1. Double click on background creates a **note**. Type text. Click outside of the note to finalize. You can still edit it later by double clicking on the note again.
 2. Copy an **image** somewhere else. Strg + V pastes the image.
 3. Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
 4. Click on the arrow button to pick an **arrow**.
@@ -77,7 +77,9 @@ I tried a lot of tools to fit my thinking style: note taking apps like Loqseq or
 
 Those are all good tools, and you should try them too if you have not found yours.
 
-But this detective board is what I am using now for a lot of things, and it fits my thinking style perfectly:
+But this detective board is what I am using now for a lot of things, and it fits my thinking style perfectly.
+
+I find myself taking notes mainly related to the following tasks:
 
 - Incident analysis: trace events, actors, and evidence until the story becomes clear.
 
