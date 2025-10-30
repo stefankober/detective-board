@@ -348,12 +348,19 @@ line.thread.live { stroke-dasharray: 5 4; }
       world.appendChild(note);
       note.focus();
 
-    // Commit on Enter, allow Ctrl+Enter for new line
-    note.addEventListener('blur', () => {
-      note.removeAttribute('contenteditable');
-    });
+      // --- enter handling ---
+      note.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' && !ev.shiftKey) {
+          ev.preventDefault();
+          note.blur(); // triggers the blur handler below
+        } 
+      });
 
-      // Right-drag to move handled globally
+      // Commit (finalize) on blur
+      note.addEventListener('blur', () => {
+        note.removeAttribute('contenteditable');
+      });
+
       return note;
     }
 
