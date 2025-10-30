@@ -548,8 +548,7 @@ line.thread.live { stroke-dasharray: 5 4; }
       svg.appendChild(path);
       arrow.appendChild(svg);
 
-      const x = state.panX + window.innerWidth / 2;
-      const y = state.panY + window.innerHeight / 2;
+      const { x, y } = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
       positionEl(arrow, x, y, true);
       arrow.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
       world.appendChild(arrow);
