@@ -16,27 +16,27 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 ## Creating Objects
 
-1. Double click on background creates a **note**. Type text. Click outside of the note or Enter to finalize (shift + enter = newline). You can still edit it later by double clicking on the note again.
-2. Copy an **image** somewhere else. Strg + V pastes the image.
-3. Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
-4. Click on the arrow button to pick an **arrow**. Move it where you need it.
+- Double click on background creates a **note**. Type text. Click outside of the note or Enter to finalize (shift + enter = newline). You can still edit it later by double clicking on the note again.
+- Copy an **image** somewhere else. Strg + V pastes the image.
+- Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
+- Click on the arrow button to pick an **arrow**. Move it where you need it.
 
 ## Moving Objects
 
-1. Click and hold into empty space: move everything.
-2. Click and hold on an object (except threads, they move with the pins): move that object.
+- Click and hold into empty space: move everything.
+- Click and hold on an object (except threads, they move with the pins): move that object.
 
 ## Delete Objects
 
-1. Shift + click on object to delete.
+- Shift + click on object to delete.
 
 ## Zoom in or out
 
-1. Use Mousewheel.
+- Use Mousewheel.
 
 ## Save and Load
 
-1. Use save and load buttons.
+- Use save and load buttons.
 
 ## Autobackup
 
