@@ -40,15 +40,18 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 ## Autobackup
 
-Autobackup checks every minute if there are changes, and if so backs up your work to local browser storage (if not empty board), and keeps the last 10 versions.
+Autobackup checks every minute if there are changes, and if so backs up your work to local browser storage (if not empty board), and keeps the last 10 versions **per tab**.
 A click on the button, and you can chose to restore any.
 Works between sessions and after crash or accidental closing.
+But note: **stale backups are deleted after 30 days**.
 
 If you want to change any of the parameters, change these numbers in the code:
 - backup interval (in milliseconds):
 `setInterval(autoBackup, 60000); // every minute`
 - keep last n:
 `function cleanupBackups(maxCount = 10) {`
+- delete after x days_
+`const cutoff = now - maxAgeDays * 24 * 60 * 60 * 1000;`
 
 ## Version Control Systems
 
