@@ -46,6 +46,10 @@ line.thread.live { stroke-dasharray: 5 4; }
 
 #help { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.6); border: 1px solid #2a2d33; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
 #help b { color: #fff; }
+#help-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+
+#close-help { background: none; border: none; color: #ccc; font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1; }
+#close-help:hover { color: #fff; }
 
 .arrow { position: absolute; width: 60px; height: 24px; transform: translate(-50%, -50%) rotate(0deg); z-index: 150; pointer-events: auto; }
 .arrow svg { width: 100%; height: 100%; fill: none; stroke: #4da3ff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); }
@@ -58,7 +62,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 <button id="loadBtn">📂 Load</button>
 <button id="restoreBackupBtn">⏲ Autobackup</button>
 <button id="arrowBtn">➡ Arrow</button>
-<div class="hint">Local Detective Board</div>
+<div class="hint">Investigation Board</div>
 <div class="hint">Double-click: <kbd>note</kbd></div>
 <div class="hint">Right-click + hold + drag: <kbd>pin + thread + pin</kbd></div>
 <div class="hint">Drag: <kbd>move</kbd></div>
@@ -75,9 +79,11 @@ line.thread.live { stroke-dasharray: 5 4; }
 <svg id="wires"></svg>
 </div>
 <div id="help">
-<div><b>Tips</b></div>
+<div><b>Tips</b><button id="close-help">×</button></div>
 <div>Right-click drag = connect pins.</div>
 <div>Drag = move items (one or all). Double-click = add note. Paste = image.</div>
+<div>Add other things you want to see when you open the board here.</div>
+<div>e.g. P(T|E) = P(E|T)P(T)/P(E)</div>
 </div>
 </div>
 </div>
@@ -794,6 +800,10 @@ line.thread.live { stroke-dasharray: 5 4; }
         console.log('Removed old backup', key);
       }
     }
+
+    document.getElementById('close-help').addEventListener('click', () => {
+      document.getElementById('help').remove();
+    });
   </script>
 </body>
 </html>
