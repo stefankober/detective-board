@@ -18,7 +18,7 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 - Double click on background creates a **note**. Type text. Click outside of the note or Enter to finalize (shift + enter = newline). You can still edit it later by double clicking on the note again.
 - Copy an **image** somewhere else. Strg + V pastes the image.
-- Right click into background to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
+- Right click anywhere to create a **pin**. Hold the right button and drag: create a **thread**, and another **pin** where you release the button.
 - Click on the arrow button to pick an **arrow**. Move it where you need it.
 
 ## Moving Objects
