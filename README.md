@@ -40,7 +40,7 @@ Autobackup data is stored only locally in browser storage and does not leave you
 
 ## Autobackup
 
-Autobackup checks every minute if there are changes, and if so backs up your work to local browser storage (if not empty board), and keeps the last 10 versions **per tab**.
+Autobackup checks every minute if there are changes, and if so backs up your work to local browser's indexedDB (since v0.2.0) if the board is not empty, and keeps the last 10 versions **per open instance**.
 A click on the button, and you can chose to restore any.
 Works between sessions and after crash or accidental closing.
 But note: **stale backups are deleted after 30 days**.
