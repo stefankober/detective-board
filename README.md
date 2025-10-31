@@ -92,6 +92,8 @@ I find myself taking notes mainly related to the following tasks:
 
 - Exploration: wander around a thought without losing it to scrolling or switching tabs.
 
+And for these use cases, this board is exactly what I need.
+
 Here is a slightly blurred version of reading a technical book (slighty blurred because I do not own the rights to the screenshotted snippets):
 
 <img width="1431" height="862" alt="image" src="https://github.com/user-attachments/assets/d9b9e818-b080-441e-acfe-bcf6608bfec5" />
