@@ -95,6 +95,41 @@ line.thread.live { stroke-dasharray: 5 4; }
 </div>
 </div>
   <script>
+    // async wrapper for local storage of autobackup in indexdb
+    const dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open('DetectiveBoardDB', 1);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('backups')) {
+          db.createObjectStore('backups', { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = e => reject(e.target.error);
+    });
+
+    async function idbSaveBackup(id, data) {
+      const db = await dbPromise;
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('backups', 'readwrite');
+        const store = tx.objectStore('backups');
+        const req = store.put({ id, data, time: Date.now() });
+        req.onsuccess = () => resolve(true);
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
+    async function idbLoadAllBackups() {
+      const db = await dbPromise;
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('backups', 'readonly');
+        const store = tx.objectStore('backups');
+        const req = store.getAll();
+        req.onsuccess = e => resolve(e.target.result || []);
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
     // Basic pan/zoom for an infinite-feel world
     const viewport = document.getElementById('viewport');
     const world = document.getElementById('world');
@@ -676,14 +711,14 @@ line.thread.live { stroke-dasharray: 5 4; }
     }
 
     let lastBackupHash = null;
+    const sessionId = 'session_' + Math.random().toString(36).slice(2, 8);
 
-    function autoBackup() {
+    async function autoBackup() {
       try {
-        const isEmptyBoard = (
+        const isEmptyBoard =
           state.pins.size === 0 &&
           state.threads.length === 0 &&
-          world.querySelectorAll('.note, .image, .arrow').length === 0
-        );
+          world.querySelectorAll('.note, .image, .arrow').length === 0;
         if (isEmptyBoard) return;
 
         const data = serializeBoard();
@@ -696,10 +731,22 @@ line.thread.live { stroke-dasharray: 5 4; }
         lastBackupHash = hash;
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const key = `detectiveBoardBackup_${timestamp}_${Math.random().toString(36).slice(2, 8)}`;
-        localStorage.setItem(key, data);
-        console.log('Auto-saved backup', key);
-        cleanupBackups();
+        const key = `detectiveBoardBackup_${sessionId}_${timestamp}_${Math.random()
+          .toString(36)
+          .slice(2, 8)}`;
+
+        try {
+          await idbSaveBackup(key, data);
+          console.log('Auto-saved backup in IndexedDB', key);
+          cleanupBackups(); // prune old ones if desired
+        } catch (err) {
+          console.error('Auto-backup failed during IndexedDB save:', err);
+          alert(
+            '⚠️ Auto-backup failed.\n\n' +
+              'IndexedDB might be full or unavailable.\n' +
+              'Please save manually using the 💾 button.'
+          );
+        }
       } catch (err) {
         console.error('Auto-backup failed:', err);
       }
@@ -714,16 +761,23 @@ line.thread.live { stroke-dasharray: 5 4; }
 
     setInterval(autoBackup, 60000); // every minute
 
-    restoreBackupBtn.addEventListener('click', () => {
-      const keys = Object.keys(localStorage)
-        .filter(k => k.startsWith('detectiveBoardBackup_'))
-        .sort()
-        .reverse(); // newest first
-
-      if (!keys.length) {
-        alert('No backups found.');
+    restoreBackupBtn.addEventListener('click', async () => {
+      let backups = [];
+      try {
+        backups = await idbLoadAllBackups();
+      } catch (err) {
+        console.error('Failed to read IndexedDB backups', err);
+        alert('Could not read backups from IndexedDB.');
         return;
       }
+
+      if (!backups.length) {
+        alert('No backups found in IndexedDB.');
+        return;
+      }
+
+      // newest first
+      backups.sort((a, b) => b.time - a.time);
 
       const chooser = document.createElement('div');
       chooser.style.position = 'absolute';
@@ -746,9 +800,10 @@ line.thread.live { stroke-dasharray: 5 4; }
       title.style.color = '#ccc';
       chooser.appendChild(title);
 
-      for (const key of keys) {
+      for (const b of backups) {
         const btn = document.createElement('button');
-        btn.textContent = key.replace('detectiveBoardBackup_', '');
+        const date = new Date(b.time).toLocaleString();
+        btn.textContent = `${date} – ${b.id.slice(0, 30)}…`;
         btn.style.margin = '2px 0';
         btn.style.background = '#2b2f36';
         btn.style.color = '#fff';
@@ -757,9 +812,9 @@ line.thread.live { stroke-dasharray: 5 4; }
         btn.style.padding = '4px 6px';
         btn.style.cursor = 'pointer';
         btn.addEventListener('click', () => {
-          if (confirm(`Restore this backup?\n${key}`)) {
+          if (confirm(`Restore this backup?\n${b.id}`)) {
             try {
-              const data = JSON.parse(localStorage.getItem(key));
+              const data = JSON.parse(b.data);
               loadFromData(data);
               chooser.remove();
             } catch (err) {
@@ -784,7 +839,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 
       document.body.appendChild(chooser);
 
-      // Close chooser when clicking outside
+      // close chooser when clicking outside
       const outsideClickHandler = (e) => {
         if (!chooser.contains(e.target)) {
           chooser.remove();
@@ -796,20 +851,49 @@ line.thread.live { stroke-dasharray: 5 4; }
 
 
     function cleanupBackups(maxCount = 10) {
+      const prefix = `detectiveBoardBackup_${sessionId}_`;
       const keys = Object.keys(localStorage)
-        .filter(k => k.startsWith('detectiveBoardBackup_'))
-        .sort(); // oldest first, because ISO timestamps sort lexicographically
-
+        .filter(k => k.startsWith(prefix))
+        .sort(); // oldest first
       while (keys.length > maxCount) {
-        const key = keys.shift();
-        localStorage.removeItem(key);
-        console.log('Removed old backup', key);
+        localStorage.removeItem(keys.shift());
       }
     }
 
     document.getElementById('close-help').addEventListener('click', () => {
       document.getElementById('help').remove();
     });
+
+    async function cleanupStaleBackups(maxAgeDays = 30) {
+      try {
+        const db = await dbPromise;
+        const tx = db.transaction('backups', 'readwrite');
+        const store = tx.objectStore('backups');
+        const now = Date.now();
+        const cutoff = now - maxAgeDays * 24 * 60 * 60 * 1000;
+
+        const req = store.getAll(); // grab all entries
+        req.onsuccess = () => {
+          const backups = req.result || [];
+          let removed = 0;
+          for (const b of backups) {
+            if (b.time && b.time < cutoff) {
+              store.delete(b.id);
+              removed++;
+            }
+          }
+          if (removed) console.log(`Cleaned ${removed} stale backups older than ${maxAgeDays} days`);
+        };
+        req.onerror = (e) => {
+          console.warn('Failed to enumerate backups for cleanup:', e);
+        };
+      } catch (err) {
+        console.error('Cleanup failed:', err);
+      }
+    }
+
+    cleanupStaleBackups();
+    console.log('Stale Backup Cleaner ran.');
   </script>
 </body>
 </html>
