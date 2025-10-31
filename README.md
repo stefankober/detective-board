@@ -102,3 +102,15 @@ Here is a slightly blurred version of reading a technical book (slighty blurred 
 # Kudos
 
 I took some inspiration from https://github.com/Fungeey/detectiveboard.
+
+# License
+
+Released under MIT license.
+
+# Changelog
+
+v0.2.0:
+
+- Moved storage from localStorage to IndexedDB
+- Added async autosave and restore UI
+- Added 30-day cleanup for stale backups
