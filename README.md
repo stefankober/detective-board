@@ -50,7 +50,7 @@ If you want to change any of the parameters, change these numbers in the code:
 `setInterval(autoBackup, 60000); // every minute`
 - keep last n:
 `function cleanupBackups(maxCount = 10) {`
-- delete after x days_
+- delete after x days:
 `const cutoff = now - maxAgeDays * 24 * 60 * 60 * 1000;`
 
 ## Version Control Systems
