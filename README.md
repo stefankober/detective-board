@@ -45,13 +45,15 @@ A click on the button, and you can chose to restore any.
 Works between sessions and after crash or accidental closing.
 But note: **stale backups are deleted after 30 days**.
 
+You can also remove all backups. But that means **all**, not per session.
+
 If you want to change any of the parameters, change these numbers in the code:
 - backup interval (in milliseconds):
 `setInterval(autoBackup, 60000); // every minute`
 - keep last n:
 `function cleanupBackups(maxCount = 10) {`
 - delete after x days:
-`async function cleanupStaleBackups(maxAgeDays = 30) {`
+`async function cleanupBackups({ maxCount = 10, perSession = true } = {}) {`
 
 ## Version Control Systems
 
