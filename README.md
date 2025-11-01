@@ -112,9 +112,9 @@ I took some inspiration from https://github.com/Fungeey/detectiveboard.
 Released under MIT license.
 
 # Changelog
+v.0.2.1:
 
-v0.2.0:
-
-- Moved storage from localStorage to IndexedDB
-- Added async autosave and restore UI
-- Added 30-day cleanup for stale backups
+- bugfix: autocleanup after 30 days
+- added button to remove all backups
+- fixed time string, so it shows local time, not UTC
+- removed stale random string at the end of backup name
