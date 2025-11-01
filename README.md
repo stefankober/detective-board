@@ -92,7 +92,9 @@ I find myself taking notes mainly related to the following tasks:
 
 - Exploration: wander around a thought without losing it to scrolling or switching tabs.
 
-And for these use cases, this board is exactly what I need.
+And for these use cases, this board is exactly what I need. 
+
+I can gradually build up my own thoughts, or tear apart the thoughts of others in a controlled way, trying to understand how they were build up, and why in this way.
 
 Here is a slightly blurred version of reading a technical book (slighty blurred because I do not own the rights to the screenshotted snippets):
 
