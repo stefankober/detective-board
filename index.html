@@ -730,21 +730,25 @@ line.thread.live { stroke-dasharray: 5 4; }
         }
         lastBackupHash = hash;
 
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const key = `detectiveBoardBackup_${sessionId}_${timestamp}_${Math.random()
-          .toString(36)
-          .slice(2, 8)}`;
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const timestamp =
+          `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_` +
+          `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+
+        // No random suffix needed anymore
+        const key = `detectiveBoardBackup_${sessionId}_${timestamp}`;
 
         try {
           await idbSaveBackup(key, data);
           console.log('Auto-saved backup in IndexedDB', key);
-          cleanupBackups(); // prune old ones if desired
+          await cleanupBackups({ maxCount: 10, perSession: true });
         } catch (err) {
           console.error('Auto-backup failed during IndexedDB save:', err);
           alert(
-            '⚠️ Auto-backup failed.\n\n' +
+            'Auto-backup failed.\n\n' +
               'IndexedDB might be full or unavailable.\n' +
-              'Please save manually using the 💾 button.'
+              'Please save manually using the save button.'
           );
         }
       } catch (err) {
@@ -825,17 +829,51 @@ line.thread.live { stroke-dasharray: 5 4; }
         chooser.appendChild(btn);
       }
 
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = 'Cancel';
-      closeBtn.style.marginTop = '8px';
-      closeBtn.style.background = '#3a3d43';
-      closeBtn.style.color = '#ccc';
-      closeBtn.style.border = '1px solid #444';
-      closeBtn.style.borderRadius = '4px';
-      closeBtn.style.padding = '4px 6px';
-      closeBtn.style.cursor = 'pointer';
-      closeBtn.addEventListener('click', () => chooser.remove());
-      chooser.appendChild(closeBtn);
+      // --- Bottom action bar ---
+      const actionBar = document.createElement('div');
+      actionBar.style.display = 'flex';
+      actionBar.style.justifyContent = 'space-between';
+      actionBar.style.marginTop = '8px';
+
+      // Cancel button
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.background = '#3a3d43';
+      cancelBtn.style.color = '#ccc';
+      cancelBtn.style.border = '1px solid #444';
+      cancelBtn.style.borderRadius = '4px';
+      cancelBtn.style.padding = '4px 6px';
+      cancelBtn.style.cursor = 'pointer';
+      cancelBtn.addEventListener('click', () => chooser.remove());
+
+      // Delete-all button
+      const deleteAllBtn = document.createElement('button');
+      deleteAllBtn.textContent = 'Delete all backups';
+      deleteAllBtn.style.background = '#7a1e18';
+      deleteAllBtn.style.color = '#fff';
+      deleteAllBtn.style.border = '1px solid #a22a1a';
+      deleteAllBtn.style.borderRadius = '4px';
+      deleteAllBtn.style.padding = '4px 6px';
+      deleteAllBtn.style.cursor = 'pointer';
+      deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm('This will remove all backups, not only from this session!')) return;
+        try {
+          const db = await dbPromise;
+          const tx = db.transaction('backups', 'readwrite');
+          tx.objectStore('backups').clear();
+          tx.oncomplete = () => {
+            alert('All backups deleted from IndexedDB.');
+            chooser.remove();
+          };
+          tx.onerror = e => alert('Failed to clear backups:\n' + e.target.error);
+        } catch (err) {
+          alert('Error deleting backups:\n' + err);
+        }
+      });
+
+      actionBar.appendChild(cancelBtn);
+      actionBar.appendChild(deleteAllBtn);
+      chooser.appendChild(actionBar);
 
       document.body.appendChild(chooser);
 
@@ -850,14 +888,52 @@ line.thread.live { stroke-dasharray: 5 4; }
     });
 
 
-    function cleanupBackups(maxCount = 10) {
+    async function cleanupBackups({ maxCount = 10, perSession = true } = {}) {
+      const db = await dbPromise;
+
       const prefix = `detectiveBoardBackup_${sessionId}_`;
-      const keys = Object.keys(localStorage)
-        .filter(k => k.startsWith(prefix))
-        .sort(); // oldest first
-      while (keys.length > maxCount) {
-        localStorage.removeItem(keys.shift());
-      }
+
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('backups', 'readwrite');
+        const store = tx.objectStore('backups');
+        const req = store.getAll();
+
+        req.onsuccess = () => {
+          /** @type {{id:string, data:string, time:number}[]} */
+          let backups = req.result || [];
+
+          if (perSession) {
+            backups = backups.filter(b => typeof b.id === 'string' && b.id.startsWith(prefix));
+          }
+
+          // Oldest first by .time, fall back to lexical id just in case
+          backups.sort((a, b) => {
+            const ta = typeof a.time === 'number' ? a.time : 0;
+            const tb = typeof b.time === 'number' ? b.time : 0;
+            if (ta !== tb) return ta - tb;
+            return String(a.id).localeCompare(String(b.id));
+          });
+
+          const toDelete = backups.length > maxCount
+            ? backups.slice(0, backups.length - maxCount)
+            : [];
+
+          for (const b of toDelete) {
+            store.delete(b.id);
+          }
+
+          tx.oncomplete = () => {
+            if (toDelete.length) {
+              console.log(`Pruned ${toDelete.length} backup(s); kept ${backups.length - toDelete.length}.`);
+            }
+            resolve({ deleted: toDelete.length });
+          };
+          tx.onerror = e => reject(e.target.error);
+          tx.onabort = e => reject(e.target.error);
+        };
+
+        req.onerror = e => reject(e.target.error);
+      });
     }
 
     document.getElementById('close-help').addEventListener('click', () => {
