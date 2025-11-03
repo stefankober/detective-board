@@ -113,7 +113,7 @@ Here is a slightly blurred version of reading a technical book (slighty blurred 
 
 # Kudos
 
-The *Export Visible* function uses https://github.com/niklasvh/html2canvas. (c) Niklas von Hertzen. License in folder libs.
+The *Export Visible* function uses [https://github.com/niklasvh/html2canvas](https://github.com/bubkoo/html-to-image). (c) W.Y.. License in folder /libs.
 
 I took some inspiration from https://github.com/Fungeey/detectiveboard.
 
