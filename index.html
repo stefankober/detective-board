@@ -452,7 +452,7 @@ line.thread.live { stroke-dasharray: 5 4; }
     const data = {
         pins: Array.from(state.pins.entries()).map(([id, p]) => ({ id, x: p.x, y: p.y })),
         threads: state.threads.map(t => ({ aId: t.aId, bId: t.bId })),
-        notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), text: n.textContent })),
+        notes: Array.from(world.querySelectorAll('.note')).map(n => ({ id: n.dataset.id, x: parseFloat(n.style.left), y: parseFloat(n.style.top), html: n.innerHTML })),
         images: Array.from(world.querySelectorAll('img.image')).map(i => ({ id: i.dataset.id, x: parseFloat(i.style.left), y: parseFloat(i.style.top), src: i.src })),
         arrows: Array.from(world.querySelectorAll('.arrow')).map(a => ({
           id: a.dataset.id,
@@ -612,7 +612,7 @@ line.thread.live { stroke-dasharray: 5 4; }
           id: n.dataset.id,
           x: parseFloat(n.style.left),
           y: parseFloat(n.style.top),
-          text: n.textContent
+          html: n.innerHTML
         })),
         images: Array.from(world.querySelectorAll('img.image')).map(i => ({
           id: i.dataset.id,
@@ -652,7 +652,7 @@ line.thread.live { stroke-dasharray: 5 4; }
         const note = document.createElement('div');
         note.className = 'note';
         note.dataset.id = n.id;
-        note.textContent = n.text;
+        note.innerHTML = n.html || n.text || "";
         positionEl(note, n.x, n.y, true);
         world.appendChild(note);
 
@@ -1027,39 +1027,43 @@ line.thread.live { stroke-dasharray: 5 4; }
       }
 
       const viewport = document.getElementById("viewport");
-      if (!viewport) {
-        alert("Viewport not found.");
-        return;
-      }
+      const rect = viewport.getBoundingClientRect();
 
-      // Temporarily hide overlays that should not appear
-      const chooser = document.getElementById("exportChooser");
-      if (chooser) chooser.style.display = "none";
+      // how much to expand (tune as needed)
+      const pad = 50; // px
+      const x = rect.left + window.scrollX;
+      const y = rect.top + window.scrollY - pad;
+      const width = rect.width;
+      const height = rect.height + pad * 2;
+
       const help = document.getElementById("help");
-      const helpPrevDisplay = help ? help.style.display : null;
+      const prevHelpDisplay = help ? help.style.display : null;
       if (help) help.style.display = "none";
 
       try {
-        // Snapshot exactly what is visible in the viewport
-        const canvas = await html2canvas(viewport, {
+        const canvas = await html2canvas(document.body, {
           backgroundColor: "#0e0f12",
-          scale: 2,            // nice crispness without crazy memory
+          scale: 2,
           useCORS: true,
           logging: false,
           allowTaint: true,
-          foreignObjectRendering: true
+          foreignObjectRendering: true,
+          x,
+          y,
+          width,
+          height,
+          removeContainer: true
         });
 
         const link = document.createElement("a");
         link.download = `${sessionId}_visible.png`;
-        link.href = canvas.toDataURL("image/png", 1.0);
+        link.href = canvas.toDataURL("image/png");
         link.click();
       } catch (err) {
         console.error("Visible export failed:", err);
-        alert("Export failed. Check console for details.");
+        alert("Export failed. See console for details.");
       } finally {
-        if (chooser) chooser.style.display = "";
-        if (help && helpPrevDisplay !== null) help.style.display = helpPrevDisplay;
+        if (help && prevHelpDisplay !== null) help.style.display = prevHelpDisplay;
       }
     });
 
