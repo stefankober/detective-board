@@ -97,6 +97,7 @@ line.thread.live { stroke-dasharray: 5 4; }
 </div>
 </div>
 </div>
+  <script src="lib/html-to-image.min.js"></script>
   <script>
     // async wrapper for local storage of autobackup in indexdb
     const dbPromise = new Promise((resolve, reject) => {
@@ -1016,56 +1017,27 @@ line.thread.live { stroke-dasharray: 5 4; }
     cleanupStaleBackups();
     console.log('Stale Backup Cleaner ran.');
 
-    // html2canvas loader 
-    const h2cScript = document.createElement("script");
-    h2cScript.src = "lib/html2canvas.min.js";
-    document.head.appendChild(h2cScript);
+document.getElementById("exportBtn").addEventListener("click", async () => {
+  const node = document.getElementById("viewport");
+  const opts = {
+    backgroundColor: "#0e0f12",
+    pixelRatio: 2
+  };
 
-    document.getElementById("exportBtn").addEventListener("click", async () => {
-      if (!window.html2canvas) {
-        await new Promise(r => h2cScript.addEventListener("load", r));
-      }
+  try {
+    const dataUrl = await htmlToImage.toPng(node, opts);
+    const link = document.createElement("a");
+    link.download = `${sessionId}_board.png`;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error("Export failed:", err);
+    alert("Export failed. See console for details.");
+  }
+});
 
-      const viewport = document.getElementById("viewport");
-      const rect = viewport.getBoundingClientRect();
-
-      // how much to expand (tune as needed)
-      const pad = 50; // px
-      const x = rect.left + window.scrollX;
-      const y = rect.top + window.scrollY - pad;
-      const width = rect.width;
-      const height = rect.height + pad * 2;
-
-      const help = document.getElementById("help");
-      const prevHelpDisplay = help ? help.style.display : null;
-      if (help) help.style.display = "none";
-
-      try {
-        const canvas = await html2canvas(document.body, {
-          backgroundColor: "#0e0f12",
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          foreignObjectRendering: true,
-          x,
-          y,
-          width,
-          height,
-          removeContainer: true
-        });
-
-        const link = document.createElement("a");
-        link.download = `${sessionId}_visible.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } catch (err) {
-        console.error("Visible export failed:", err);
-        alert("Export failed. See console for details.");
-      } finally {
-        if (help && prevHelpDisplay !== null) help.style.display = prevHelpDisplay;
-      }
-    });
 
     async function renameBackups(oldSession, newSession) {
       const db = await dbPromise;
