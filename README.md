@@ -45,6 +45,9 @@ A click on the button, and you can chose to restore any.
 Works between sessions and after crash or accidental closing.
 But note: **stale backups are deleted after 30 days**.
 
+To give the session a meaningful name, just type it in the top right box. 
+All corresponding session backups will be renamed accordingly, if any.
+
 You can also remove all backups. But that means **all**, not per session.
 
 If you want to change any of the parameters, change these numbers in the code:
@@ -54,6 +57,11 @@ If you want to change any of the parameters, change these numbers in the code:
 `function cleanupBackups(maxCount = 10) {`
 - delete after x days:
 `async function cleanupBackups({ maxCount = 10, perSession = true } = {}) {`
+
+## Export PNG
+
+- Move the parts you want to export in visible area.
+- Click on `Export Visible`.
 
 ## Version Control Systems
 
@@ -104,6 +112,8 @@ Here is a slightly blurred version of reading a technical book (slighty blurred 
 
 
 # Kudos
+
+The *Export Visible* function uses https://github.com/niklasvh/html2canvas. (c) Niklas von Hertzen. License in folder libs.
 
 I took some inspiration from https://github.com/Fungeey/detectiveboard.
 
