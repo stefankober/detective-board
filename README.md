@@ -120,11 +120,3 @@ I took some inspiration from https://github.com/Fungeey/detectiveboard.
 # License
 
 Released under MIT license.
-
-# Changelog
-v.0.2.1:
-
-- bugfix: autocleanup after 30 days
-- added button to remove all backups
-- fixed time string, so it shows local time, not UTC
-- removed stale random string at the end of backup name
